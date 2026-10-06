@@ -1,12 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetch('/api/auth/session')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unable to verify session');
+        const data = (await response.json()) as { authenticated?: boolean };
+        if (isActive) setIsAuthenticated(data.authenticated === true);
+      })
+      .catch(() => {
+        if (isActive) setIsAuthenticated(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleLogout = async () => {
+    setLogoutError('');
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Unable to log out right now. Please try again.');
+      }
+      setIsAuthenticated(false);
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      setLogoutError(
+        error instanceof Error ? error.message : 'Unable to log out right now.'
+      );
+    }
   };
 
   return (
@@ -25,21 +64,38 @@ export default function Navbar() {
             <a href="/" className="text-gray-700 hover:text-blue-600 transition">
               Home
             </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition">
+            <a href="/report" className="text-gray-700 hover:text-blue-600 transition">
               Report Issue
             </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition">
+            <a href="/my-reports" className="text-gray-700 hover:text-blue-600 transition">
               My Reports
             </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition">
-              Login
-            </a>
-            <a
-              href="#"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              Register
-            </a>
+            {isAuthenticated ? (
+              <>
+                <a href="/dashboard" className="text-gray-700 hover:text-blue-600 transition">
+                  Dashboard
+                </a>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <a href="/login" className="text-gray-700 hover:text-blue-600 transition">
+                  Login
+                </a>
+                <a
+                  href="/register"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  Register
+                </a>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -48,6 +104,7 @@ export default function Navbar() {
               onClick={toggleMenu}
               className="text-gray-700 hover:text-blue-600 transition"
               aria-label="Toggle menu"
+              aria-expanded={isOpen}
             >
               <svg
                 className="w-6 h-6"
@@ -71,35 +128,69 @@ export default function Navbar() {
           <div className="md:hidden mt-4 border-t border-gray-200 pt-4 space-y-3">
             <a
               href="/"
+              onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
               Home
             </a>
             <a
-              href="#"
+              href="/report"
+              onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
               Report Issue
             </a>
             <a
-              href="#"
+              href="/my-reports"
+              onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
               My Reports
             </a>
-            <a
-              href="#"
-              className="block text-gray-700 hover:text-blue-600 transition"
-            >
-              Login
-            </a>
-            <a
-              href="#"
-              className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-center"
-            >
-              Register
-            </a>
+            {isAuthenticated ? (
+              <>
+                <a
+                  href="/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="block text-gray-700 hover:text-blue-600 transition"
+                >
+                  Dashboard
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    void handleLogout();
+                  }}
+                  className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-center"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block text-gray-700 hover:text-blue-600 transition"
+                >
+                  Login
+                </a>
+                <a
+                  href="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-center"
+                >
+                  Register
+                </a>
+              </>
+            )}
           </div>
+        )}
+        {logoutError && (
+          <p role="alert" className="px-4 pb-3 text-sm text-red-700">
+            {logoutError}
+          </p>
         )}
       </div>
     </nav>

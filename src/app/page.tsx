@@ -45,13 +45,13 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href="#"
+                  href="/report"
                   className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
                 >
                   Report an Issue
                 </a>
                 <a
-                  href="#"
+                  href="/reports"
                   className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition"
                 >
                   View Reports
@@ -118,7 +118,7 @@ export default function Home() {
               Your voice matters. Report issues and help build a cleaner, safer Baramati for all citizens.
             </p>
             <a
-              href="#"
+              href="/report"
               className="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
             >
               Start Reporting Now
@@ -148,12 +148,12 @@ export default function Home() {
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white transition">
+                    <a href="/report" className="hover:text-white transition">
                       Report Issue
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white transition">
+                    <a href="/reports" className="hover:text-white transition">
                       Browse Reports
                     </a>
                   </li>
