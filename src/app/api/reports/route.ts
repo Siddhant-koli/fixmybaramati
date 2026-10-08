@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { Report } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
@@ -93,7 +94,7 @@ const parseReportRequest = async (request: Request) => {
 
 export async function GET() {
   try {
-    const reports = await prisma.report.findMany({
+    const reports: Report[] = await prisma.report.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
