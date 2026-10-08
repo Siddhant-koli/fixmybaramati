@@ -35,7 +35,7 @@ Create a local `.env.local` file from `.env.example` and fill in the required va
 Required variables:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/fixmybaramati?schema=public"
+DATABASE_URL="<your-database-url>"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 BLOB_READ_WRITE_TOKEN="your_vercel_blob_read_write_token"
 UPLOAD_MAX_BYTES="5242880"
@@ -71,7 +71,7 @@ npx prisma generate
 npx prisma migrate deploy
 ```
 
-For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database.
+For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database before running migrations. During Vercel Production builds, the build script runs `prisma migrate deploy` with Vercel's Production `DATABASE_URL` before building the app. Preview and local builds do not run migrations.
 
 ## Production deployment prerequisites
 
