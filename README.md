@@ -1,94 +1,108 @@
 # FixMyBaramati
 
-A mobile-first civic issue reporting and resolution platform for citizens of Baramati, Maharashtra.
+FixMyBaramati is a mobile-first civic issue reporting platform for citizens of Baramati, Maharashtra.
 
-## Project Overview
+## Current implemented scope
 
-FixMyBaramati enables citizens to report civic problems like potholes, garbage, street lights, and water issues. Administrators can track, manage, and resolve these issues.
+The project currently includes:
+- Next.js App Router frontend
+- Prisma-based PostgreSQL models for users, reports, and sessions
+- user registration and login flows
+- server-side session authentication
+- protected dashboard and report submission pages
+- public report listing and report details
+- optional report photo uploads backed by a real object-storage abstraction
 
-### Key Features
-- Report civic issues with photos and location
-- Track report status in real-time
-- View issues on interactive map
-- Admin dashboard for issue management
-- Multi-language support (English & Marathi)
-- Mobile-first responsive design
-- PWA support for offline functionality
+## Technology stack
 
-## Technology Stack
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Backend: Next.js API routes
+- Database: PostgreSQL via Prisma ORM
+- Session auth: custom server-side session cookie flow using Prisma + bcryptjs
+- Photo storage: Vercel Blob-compatible abstraction via `@vercel/blob`
 
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Database**: PostgreSQL with Prisma ORM
-- **Maps**: Leaflet + OpenStreetMap
-- **Authentication**: JWT (planned)
+## Prerequisites
 
-## Project Structure
+- Node.js 18+
+- npm
+- PostgreSQL database
+- Vercel Blob token if photo uploads are enabled in your environment
 
+## Environment variables
+
+Create a local `.env.local` file from `.env.example` and fill in the required values.
+
+Required variables:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/fixmybaramati?schema=public"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+BLOB_READ_WRITE_TOKEN="your_vercel_blob_read_write_token"
+UPLOAD_MAX_BYTES="5242880"
+NODE_ENV="development"
 ```
-src/
-├── app/              # Next.js pages and layouts
-├── components/       # Reusable React components
-├── lib/             # Utilities and helpers
-├── types/           # TypeScript type definitions
-├── api/             # API routes (Phase 2+)
-└── public/          # Static assets
-```
 
-## Development Phases
+Notes:
+- `.env`, `.env.local`, and `.env.*.local` are ignored by Git.
+- Do not commit real secrets or production credentials.
+- Report photos use Vercel Blob object storage; they are not written to the local filesystem or stored as base64 in PostgreSQL.
+- Photo uploads are limited to 5 MB. `UPLOAD_MAX_BYTES` can lower the limit but cannot raise it.
+- If `BLOB_READ_WRITE_TOKEN` is missing, photo submission returns a configuration error and does not create a report. Text-only reports remain available.
+- The Blob integration is implemented, but live upload has not been verified in this environment because `BLOB_READ_WRITE_TOKEN` is unavailable. No production deployment is claimed.
 
-1. **Phase 1**: Project setup & UI foundation (CURRENT)
-2. **Phase 2**: Citizen frontend
-3. **Phase 3**: Database & Prisma
-4. **Phase 4**: Authentication
-5. **Phase 5**: Report creation
-6. **Phase 6**: Report listing & tracking
-7. **Phase 7**: Maps & location
-8. **Phase 8**: Admin dashboard
-9. **Phase 9**: PWA & offline support
-10. **Phase 10**: Testing & security
-11. **Phase 11**: GitHub workflow
-12. **Phase 12**: Production database
-13. **Phase 13**: Vercel deployment
-14. **Phase 14**: Production testing
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- PostgreSQL (for Phase 3+)
-
-### Installation
+## Local development
 
 ```bash
-# Install dependencies
 npm install
-
-# Set up environment variables
-cp .env.local.example .env.local
-
-# Run development server
+cp .env.example .env.local
 npm run dev
 ```
 
-Visit `http://localhost:3000` in your browser.
+Then open `http://localhost:3000` in the browser.
 
-## Security Guidelines
+## Languages
 
-- ✅ Never expose passwords
-- ✅ Hash passwords before storage
-- ✅ Use environment variables for secrets
-- ✅ Validate all API input
-- ✅ Protect admin routes
-- ✅ Don't hard-code credentials
+The interface supports English and Marathi. Use the language selector in the navigation to change languages; the preference is saved in the browser's local storage and does not require an account. Keep UI copy in the centralized dictionaries and translation helpers in `src/lib/i18n.tsx`. Citizen-entered report content and database/API status values are not translated.
 
-## Development Rules
+## Prisma
 
-1. Never delete files unless necessary
-2. Don't upgrade major dependencies without approval
-3. Don't use mock data as primary database
-4. Use PostgreSQL from the start
-5. Keep code mobile-first responsive
-6. Use clear, beginner-friendly code
-7. Maintain TypeScript type safety
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database.
+
+## Production deployment prerequisites
+
+For production deployment, the project needs:
+- a managed PostgreSQL database
+- a valid `DATABASE_URL`
+- a real object-storage provider for uploaded report photos
+- a valid `BLOB_READ_WRITE_TOKEN` or equivalent provider credentials
+- a production-safe app URL via `NEXT_PUBLIC_APP_URL`
+
+## Security and product notes
+
+This project currently includes:
+- bcrypt password hashing
+- hashed session tokens in the database
+- server-side session checks for protected routes
+- image validation for supported upload types
+- authenticated report creation based on the server session
+
+This project does not claim to include:
+- admin/authority dashboard
+- role-based access control
+- fake upvotes or simulated persistence
+- pseudoproduct demo-only storage behavior
+- production-ready deployment without the required infrastructure
+
+## Commands
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npx prisma validate
+```

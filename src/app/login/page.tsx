@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { translateApiMessage, useTranslation } from '@/lib/i18n';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     mobileNumber: '',
     password: '',
@@ -19,18 +21,18 @@ export default function LoginPage() {
 
   // Validation functions
   const validateMobileNumber = (phone: string): string => {
-    if (!phone) return 'Mobile number is required';
+    if (!phone) return t('auth.mobileRequired');
     const cleanPhone = phone.replace(/[^\d]/g, '');
-    if (cleanPhone.length !== 10) return 'Mobile number must be exactly 10 digits';
+    if (cleanPhone.length !== 10) return t('auth.mobileLength');
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-      return 'Mobile number must start with 6-9';
+      return t('auth.mobilePrefix');
     }
     return '';
   };
 
   const validatePassword = (pwd: string): string => {
-    if (!pwd) return 'Password is required';
-    if (pwd.length < 6) return 'Password must be at least 6 characters';
+    if (!pwd) return t('auth.passwordRequired');
+    if (pwd.length < 6) return t('auth.passwordLength');
     return '';
   };
 
@@ -109,7 +111,7 @@ export default function LoginPage() {
         };
 
         if (!response.ok || !data.success) {
-          setSubmitError(data.message || 'Invalid mobile number or password.');
+          setSubmitError(translateApiMessage(data.message, t, 'auth.loginError'));
           return;
         }
 
@@ -117,7 +119,7 @@ export default function LoginPage() {
         router.refresh();
       } catch (error) {
         console.error('Login request failed:', error);
-        setSubmitError('Unable to connect to the server right now. Please try again later.');
+        setSubmitError(t('auth.loginConnectionError'));
       } finally {
         setIsSubmitting(false);
       }
@@ -132,10 +134,10 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome Back
+              {t('auth.welcomeBack')}
             </h1>
             <p className="text-gray-600">
-              Login to track and manage your civic reports
+              {t('auth.loginDescription')}
             </p>
           </div>
 
@@ -152,7 +154,7 @@ export default function LoginPage() {
                     htmlFor="mobileNumber"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Mobile Number
+                    {t('auth.mobile')}
                   </label>
                   <input
                     type="tel"
@@ -161,7 +163,7 @@ export default function LoginPage() {
                     value={formData.mobileNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="10-digit Indian mobile number"
+                    placeholder={t('auth.mobilePlaceholder')}
                     maxLength={10}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                       touched.mobileNumber && errors.mobileNumber
@@ -175,7 +177,7 @@ export default function LoginPage() {
                     </p>
                   )}
                   <p className="text-gray-500 text-xs mt-1">
-                    Must be a valid 10-digit Indian mobile number
+                    {t('auth.mobileHint')}
                   </p>
                 </div>
 
@@ -185,7 +187,7 @@ export default function LoginPage() {
                     htmlFor="password"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Password
+                    {t('auth.password')}
                   </label>
                   <div className="relative">
                     <input
@@ -195,7 +197,7 @@ export default function LoginPage() {
                       value={formData.password}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder="At least 6 characters"
+                      placeholder={t('auth.passwordPlaceholder')}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-10 ${
                         touched.password && errors.password
                           ? 'border-red-500 focus:ring-red-500'
@@ -207,7 +209,7 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700 transition"
                       aria-label={
-                        showPassword ? 'Hide password' : 'Show password'
+                        showPassword ? t('auth.hidePassword') : t('auth.showPassword')
                       }
                     >
                       {showPassword ? (
@@ -260,7 +262,7 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                   className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
                 >
-                  {isSubmitting ? 'Logging in...' : 'Login'}
+                  {isSubmitting ? t('auth.loggingIn') : t('auth.login')}
                 </button>
               </form>
 
@@ -269,12 +271,12 @@ export default function LoginPage() {
 
               {/* Register Link */}
               <p className="text-center text-gray-600 text-sm">
-                Don't have an account?{' '}
+                {t('auth.noAccount')}{' '}
                 <a
                   href="/register"
                   className="text-blue-600 font-semibold hover:text-blue-700 transition"
                 >
-                  Register here
+                  {t('auth.registerHere')}
                 </a>
               </p>
 
@@ -284,7 +286,7 @@ export default function LoginPage() {
                   href="/"
                   className="text-gray-600 hover:text-blue-600 transition"
                 >
-                  Back to Home
+                  {t('auth.backHome')}
                 </a>
               </p>
         </div>

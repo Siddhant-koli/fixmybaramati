@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LanguageSwitcher, translateApiMessage, useTranslation } from '@/lib/i18n';
 
 export default function Navbar() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [logoutError, setLogoutError] = useState('');
@@ -36,14 +38,14 @@ export default function Navbar() {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
       if (!response.ok) {
-        throw new Error('Unable to log out right now. Please try again.');
+        throw new Error(t('nav.logoutError'));
       }
       setIsAuthenticated(false);
       router.push('/login');
       router.refresh();
     } catch (error) {
       setLogoutError(
-        error instanceof Error ? error.message : 'Unable to log out right now.'
+        translateApiMessage(error instanceof Error ? error.message : undefined, t, 'nav.logoutError')
       );
     }
   };
@@ -60,50 +62,51 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="/" className="text-gray-700 hover:text-blue-600 transition">
-              Home
-            </a>
+          <div className="hidden lg:flex items-center gap-4">
+            <a href="/" className="text-gray-700 hover:text-blue-600 transition">{t('nav.home')}</a>
             <a href="/report" className="text-gray-700 hover:text-blue-600 transition">
-              Report Issue
+              {t('nav.reportIssue')}
             </a>
             <a href="/my-reports" className="text-gray-700 hover:text-blue-600 transition">
-              My Reports
+              {t('nav.myReports')}
             </a>
             {isAuthenticated ? (
               <>
                 <a href="/dashboard" className="text-gray-700 hover:text-blue-600 transition">
-                  Dashboard
+                  {t('nav.dashboard')}
                 </a>
                 <button
                   type="button"
                   onClick={handleLogout}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
                 >
-                  Logout
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
               <>
                 <a href="/login" className="text-gray-700 hover:text-blue-600 transition">
-                  Login
+                  {t('nav.login')}
                 </a>
                 <a
                   href="/register"
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
                 >
-                  Register
+                  {t('nav.register')}
                 </a>
               </>
             )}
           </div>
+          <div className="hidden lg:block">
+            <LanguageSwitcher />
+          </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button
               onClick={toggleMenu}
               className="text-gray-700 hover:text-blue-600 transition"
-              aria-label="Toggle menu"
+              aria-label={t('nav.menu')}
               aria-expanded={isOpen}
             >
               <svg
@@ -125,27 +128,27 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden mt-4 border-t border-gray-200 pt-4 space-y-3">
+          <div className="lg:hidden mt-4 border-t border-gray-200 pt-4 space-y-3">
             <a
               href="/"
               onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
-              Home
+              {t('nav.home')}
             </a>
             <a
               href="/report"
               onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
-              Report Issue
+              {t('nav.reportIssue')}
             </a>
             <a
               href="/my-reports"
               onClick={() => setIsOpen(false)}
               className="block text-gray-700 hover:text-blue-600 transition"
             >
-              My Reports
+              {t('nav.myReports')}
             </a>
             {isAuthenticated ? (
               <>
@@ -154,7 +157,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="block text-gray-700 hover:text-blue-600 transition"
                 >
-                  Dashboard
+                  {t('nav.dashboard')}
                 </a>
                 <button
                   type="button"
@@ -164,7 +167,7 @@ export default function Navbar() {
                   }}
                   className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-center"
                 >
-                  Logout
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -174,19 +177,22 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="block text-gray-700 hover:text-blue-600 transition"
                 >
-                  Login
+                  {t('nav.login')}
                 </a>
                 <a
                   href="/register"
                   onClick={() => setIsOpen(false)}
                   className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-center"
                 >
-                  Register
+                  {t('nav.register')}
                 </a>
               </>
             )}
           </div>
         )}
+        <div className={`lg:hidden ${isOpen ? 'mt-3' : 'mt-0'}`}>
+          <LanguageSwitcher />
+        </div>
         {logoutError && (
           <p role="alert" className="px-4 pb-3 text-sm text-red-700">
             {logoutError}

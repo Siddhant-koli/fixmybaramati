@@ -23,8 +23,16 @@ export async function GET(
     return NextResponse.json({
       success: true,
       report: {
-        ...report,
+        id: report.id,
+        title: report.title,
+        category: report.category,
+        description: report.description,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        location: report.location,
+        photoUrl: report.photoUrl,
         status: report.status,
+        upvotes: report.upvotes,
         createdAt: report.createdAt.toISOString(),
         updatedAt: report.updatedAt.toISOString(),
       },

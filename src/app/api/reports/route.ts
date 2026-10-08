@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import {
+  deleteStoredImage,
+  PHOTO_STORAGE_NOT_CONFIGURED_MESSAGE,
+  uploadReportImage,
+  validateUploadedImage,
+} from '@/lib/storage';
 
 const validateTitle = (value: string) => {
   const trimmed = value.trim();
@@ -54,19 +60,56 @@ const validateCoordinates = (latitude: string, longitude: string) => {
   return {};
 };
 
+const parseReportRequest = async (request: Request) => {
+  const contentType = request.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData();
+    const photo = formData.get('photo');
+
+    return {
+      title: String(formData.get('title') ?? '').trim(),
+      category: String(formData.get('category') ?? '').trim(),
+      description: String(formData.get('description') ?? '').trim(),
+      latitude: String(formData.get('latitude') ?? '').trim(),
+      longitude: String(formData.get('longitude') ?? '').trim(),
+      location: String(formData.get('location') ?? '').trim(),
+      photo: photo instanceof File ? photo : null,
+    };
+  }
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  return {
+    title: String(body.title ?? '').trim(),
+    category: String(body.category ?? '').trim(),
+    description: String(body.description ?? '').trim(),
+    latitude: String(body.latitude ?? '').trim(),
+    longitude: String(body.longitude ?? '').trim(),
+    location: String(body.location ?? '').trim(),
+    photo: null,
+  };
+};
+
 export async function GET() {
   try {
     const reports = await prisma.report.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
-    type ReportWithRelations = Awaited<ReturnType<typeof prisma.report.findMany>>[number];
-
     return NextResponse.json({
       success: true,
-      reports: reports.map((report: ReportWithRelations) => ({
-        ...report,
+      reports: reports.map((report) => ({
+        id: report.id,
+        title: report.title,
+        category: report.category,
+        description: report.description,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        location: report.location,
+        photoUrl: report.photoUrl,
         status: report.status,
+        upvotes: report.upvotes,
         createdAt: report.createdAt.toISOString(),
         updatedAt: report.updatedAt.toISOString(),
       })),
@@ -88,26 +131,27 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'Please log in to submit a report.' },
+        { success: false, message: 'Please sign in to submit a report.' },
         { status: 401 }
       );
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
-    const title = String(body.title ?? '').trim();
-    const category = String(body.category ?? '').trim();
-    const description = String(body.description ?? '').trim();
-    const latitude = String(body.latitude ?? '').trim();
-    const longitude = String(body.longitude ?? '').trim();
-    const location = String(body.location ?? '').trim();
+    const { title, category, description, latitude, longitude, location, photo } =
+      await parseReportRequest(request);
 
-    const coordinateErrors = validateCoordinates(latitude, longitude);
     const errors: Record<string, string> = {
       title: validateTitle(title),
       category: validateCategory(category),
       description: validateDescription(description),
-      ...(coordinateErrors as Record<string, string>),
+      ...(validateCoordinates(latitude, longitude) as Record<string, string>),
     };
+
+    if (photo) {
+      const photoValidation = await validateUploadedImage(photo);
+      if (!photoValidation.valid) {
+        errors.photo = photoValidation.message;
+      }
+    }
 
     const hasErrors = Object.values(errors).some((message) => message !== '');
     if (hasErrors) {
@@ -121,48 +165,89 @@ export async function POST(request: Request) {
       );
     }
 
-    const latitudeValue = latitude ? Number(latitude) : null;
-    const longitudeValue = longitude ? Number(longitude) : null;
-    const normalizedLocation =
-      location ||
-      (latitudeValue !== null && longitudeValue !== null
-        ? `Latitude: ${latitudeValue}, Longitude: ${longitudeValue}`
-        : null);
+    let uploadedPhotoUrl: string | null = null;
 
-    const report = await prisma.report.create({
-      data: {
-        title,
-        category,
-        description,
-        latitude: latitudeValue,
-        longitude: longitudeValue,
-        location: normalizedLocation,
-        photoUrl: null,
-        status: 'PENDING',
-        upvotes: 0,
-        reporterId: user.id,
-      },
-    });
+    try {
+      if (photo) {
+        const uploadResult = await uploadReportImage(photo, user.id);
+        uploadedPhotoUrl = uploadResult.url;
+      }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Your civic issue has been reported successfully.',
-        report: {
-          ...report,
-          status: report.status,
-          createdAt: report.createdAt.toISOString(),
-          updatedAt: report.updatedAt.toISOString(),
+      const latitudeValue = latitude ? Number(latitude) : null;
+      const longitudeValue = longitude ? Number(longitude) : null;
+      const normalizedLocation =
+        location ||
+        (latitudeValue !== null && longitudeValue !== null
+          ? `Latitude: ${latitudeValue}, Longitude: ${longitudeValue}`
+          : null);
+
+      const report = await prisma.report.create({
+        data: {
+          title,
+          category,
+          description,
+          latitude: latitudeValue,
+          longitude: longitudeValue,
+          location: normalizedLocation,
+          photoUrl: uploadedPhotoUrl,
+          status: 'PENDING',
+          upvotes: 0,
+          reporterId: user.id,
         },
-      },
-      { status: 201 }
-    );
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Your civic issue has been reported successfully.',
+          report: {
+            id: report.id,
+            title: report.title,
+            category: report.category,
+            description: report.description,
+            latitude: report.latitude,
+            longitude: report.longitude,
+            location: report.location,
+            photoUrl: report.photoUrl,
+            status: report.status,
+            upvotes: report.upvotes,
+            createdAt: report.createdAt.toISOString(),
+            updatedAt: report.updatedAt.toISOString(),
+          },
+        },
+        { status: 201 }
+      );
+    } catch (error) {
+      if (uploadedPhotoUrl) {
+        await deleteStoredImage(uploadedPhotoUrl);
+      }
+
+      console.error('Report creation failed:', error);
+      if (
+        photo &&
+        error instanceof Error &&
+        error.message === PHOTO_STORAGE_NOT_CONFIGURED_MESSAGE
+      ) {
+        return NextResponse.json(
+          { success: false, message: PHOTO_STORAGE_NOT_CONFIGURED_MESSAGE },
+          { status: 503 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unable to create the report. Please try again.',
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Report creation failed:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Your report could not be submitted. Please try again later.',
+        message: 'Unable to create the report. Please try again.',
       },
       { status: 500 }
     );

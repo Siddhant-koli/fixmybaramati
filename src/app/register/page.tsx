@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
+import { translateApiMessage, useTranslation } from '@/lib/i18n';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     fullName: '',
     mobileNumber: '',
@@ -18,30 +20,30 @@ export default function RegisterPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const validateFullName = (name: string): string => {
-    if (!name.trim()) return 'Full name is required';
-    if (name.trim().length < 2) return 'Full name must be at least 2 characters';
+    if (!name.trim()) return t('auth.fullNameRequired');
+    if (name.trim().length < 2) return t('auth.fullNameLength');
     return '';
   };
 
   const validateMobileNumber = (phone: string): string => {
-    if (!phone) return 'Mobile number is required';
+    if (!phone) return t('auth.mobileRequired');
     const cleanPhone = phone.replace(/[^\d]/g, '');
-    if (cleanPhone.length !== 10) return 'Mobile number must be exactly 10 digits';
+    if (cleanPhone.length !== 10) return t('auth.mobileLength');
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-      return 'Mobile number must start with 6-9';
+      return t('auth.mobilePrefix');
     }
     return '';
   };
 
   const validatePassword = (pwd: string): string => {
-    if (!pwd) return 'Password is required';
-    if (pwd.length < 6) return 'Password must be at least 6 characters';
+    if (!pwd) return t('auth.passwordRequired');
+    if (pwd.length < 6) return t('auth.passwordLength');
     return '';
   };
 
   const validateConfirmPassword = (pwd: string, confirmPwd: string): string => {
-    if (!confirmPwd) return 'Please confirm your password';
-    if (pwd !== confirmPwd) return 'Passwords do not match';
+    if (!confirmPwd) return t('auth.confirmRequired');
+    if (pwd !== confirmPwd) return t('auth.passwordMismatch');
     return '';
   };
 
@@ -142,14 +144,26 @@ export default function RegisterPage() {
 
       if (!response.ok || !data.success) {
         if (data.errors) {
-          setErrors({ ...newErrors, ...data.errors });
+          setErrors({
+            ...newErrors,
+            ...Object.fromEntries(
+              Object.entries(data.errors).map(([key, message]) => [
+                key,
+                translateApiMessage(message, t, 'auth.registrationFailed'),
+              ])
+            ),
+          });
         }
-        setSubmitMessage(data.message || 'Registration failed. Please try again.');
+        setSubmitMessage(
+          translateApiMessage(data.message, t, 'auth.registrationValidationError')
+        );
         setIsSuccess(false);
         return;
       }
 
-      setSubmitMessage(data.message || 'Registration successful.');
+      setSubmitMessage(
+        translateApiMessage(data.message, t, 'auth.registrationSuccess')
+      );
       setIsSuccess(true);
       setFormData({
         fullName: '',
@@ -162,7 +176,7 @@ export default function RegisterPage() {
     } catch (error) {
       console.error('Registration request failed:', error);
       setSubmitMessage(
-        'Unable to connect to the server right now. Please try again later.'
+        t('auth.loginConnectionError')
       );
       setIsSuccess(false);
     } finally {
@@ -177,10 +191,10 @@ export default function RegisterPage() {
         <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Create Your Account
+              {t('auth.createAccount')}
             </h1>
             <p className="text-gray-600">
-              Join FixMyBaramati and start reporting civic issues
+              {t('auth.registerDescription')}
             </p>
           </div>
 
@@ -197,7 +211,7 @@ export default function RegisterPage() {
                 <>
                   {' '}
                   <a href="/login" className="font-semibold underline">
-                    Login here
+                    {t('auth.loginHere')}
                   </a>
                 </>
               )}
@@ -210,7 +224,7 @@ export default function RegisterPage() {
                 htmlFor="fullName"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Full Name
+                {t('auth.fullName')}
               </label>
               <input
                 type="text"
@@ -219,7 +233,7 @@ export default function RegisterPage() {
                 value={formData.fullName}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="Enter your full name"
+                placeholder={t('auth.fullNamePlaceholder')}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                   touched.fullName && errors.fullName
                     ? 'border-red-500 focus:ring-red-500'
@@ -236,7 +250,7 @@ export default function RegisterPage() {
                 htmlFor="mobileNumber"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Mobile Number
+                {t('auth.mobile')}
               </label>
               <input
                 type="tel"
@@ -245,7 +259,7 @@ export default function RegisterPage() {
                 value={formData.mobileNumber}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="10-digit Indian mobile number"
+                placeholder={t('auth.mobilePlaceholder')}
                 maxLength={10}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                   touched.mobileNumber && errors.mobileNumber
@@ -257,7 +271,7 @@ export default function RegisterPage() {
                 <p className="text-red-600 text-sm mt-1">{errors.mobileNumber}</p>
               )}
               <p className="text-gray-500 text-xs mt-1">
-                Must be a valid 10-digit Indian mobile number
+                {t('auth.mobileHint')}
               </p>
             </div>
 
@@ -266,7 +280,7 @@ export default function RegisterPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Password
+                {t('auth.password')}
               </label>
               <input
                 type="password"
@@ -275,7 +289,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="At least 6 characters"
+                placeholder={t('auth.passwordPlaceholder')}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                   touched.password && errors.password
                     ? 'border-red-500 focus:ring-red-500'
@@ -292,7 +306,7 @@ export default function RegisterPage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Confirm Password
+                {t('auth.confirmPassword')}
               </label>
               <input
                 type="password"
@@ -301,7 +315,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="Re-enter your password"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                   touched.confirmPassword && errors.confirmPassword
                     ? 'border-red-500 focus:ring-red-500'
@@ -318,25 +332,25 @@ export default function RegisterPage() {
               disabled={isSubmitting}
               className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
             >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting ? t('auth.creatingAccount') : t('auth.createAccountButton')}
             </button>
           </form>
 
           <div className="my-6 border-t border-gray-200"></div>
 
           <p className="text-center text-gray-600 text-sm">
-            Already have an account?{' '}
+            {t('auth.hasAccount')}{' '}
             <a
               href="/login"
               className="text-blue-600 font-semibold hover:text-blue-700 transition"
             >
-              Login here
+              {t('auth.loginHere')}
             </a>
           </p>
 
           <p className="text-center text-gray-500 text-xs mt-4">
             <a href="/" className="text-gray-600 hover:text-blue-600 transition">
-              Back to Home
+              {t('auth.backHome')}
             </a>
           </p>
         </div>

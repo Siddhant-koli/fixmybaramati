@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { translateApiMessage, useTranslation } from '@/lib/i18n';
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 export default function ReportPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -20,24 +24,41 @@ export default function ReportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState<{ success: boolean; message: string } | null>(null);
   const [photoName, setPhotoName] = useState('');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState('');
 
-  const categories = ['Potholes', 'Garbage', 'Street Lights', 'Water', 'Drainage', 'Roads', 'Other'];
+  const categories = [
+    ['Potholes', 'category.potholes'],
+    ['Garbage', 'category.garbage'],
+    ['Street Lights', 'category.streetLights'],
+    ['Water', 'category.water'],
+    ['Drainage', 'category.drainage'],
+    ['Roads', 'category.roads'],
+    ['Other', 'category.other'],
+  ] as const;
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
 
   const validateTitle = (title: string): string => {
-    if (!title.trim()) return 'Issue title is required';
-    if (title.trim().length < 5) return 'Title must be at least 5 characters';
+    if (!title.trim()) return t('report.titleRequired');
+    if (title.trim().length < 5) return t('report.titleLength');
     return '';
   };
 
   const validateCategory = (category: string): string => {
-    if (!category) return 'Please select a category';
+    if (!category) return t('report.categoryRequired');
     return '';
   };
 
   const validateDescription = (desc: string): string => {
-    if (!desc.trim()) return 'Description is required';
-    if (desc.trim().length < 20) return 'Description must be at least 20 characters';
+    if (!desc.trim()) return t('report.descriptionRequired');
+    if (desc.trim().length < 20) return t('report.descriptionLength');
     return '';
   };
 
@@ -49,14 +70,14 @@ export default function ReportPage() {
       const longitude = Number.parseFloat(lon);
 
       if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-        nextErrors.coordinates = 'Please enter valid numbers for coordinates';
+        nextErrors.coordinates = t('report.coordinatesInvalid');
       } else if (latitude < -90 || latitude > 90) {
-        nextErrors.latitude = 'Latitude must be between -90 and 90';
+        nextErrors.latitude = t('report.latitudeRange');
       } else if (longitude < -180 || longitude > 180) {
-        nextErrors.longitude = 'Longitude must be between -180 and 180';
+        nextErrors.longitude = t('report.longitudeRange');
       }
     } else if ((lat && !lon) || (!lat && lon)) {
-      nextErrors.coordinates = 'Please enter both latitude and longitude, or leave both empty';
+      nextErrors.coordinates = t('report.coordinatesBoth');
     }
 
     return nextErrors;
@@ -83,16 +104,44 @@ export default function ReportPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    const fileType = file.type.toLowerCase();
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!acceptedTypes.includes(fileType)) {
       setErrors((prev) => ({
         ...prev,
-        photo: 'Please select a valid image file',
+        photo: t('report.photoInvalid'),
       }));
       setPhotoName('');
+      setPhotoPreview(null);
+      setFormData((prev) => ({
+        ...prev,
+        photo: null,
+      }));
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setErrors((prev) => ({
+        ...prev,
+        photo: t('report.photoTooLarge'),
+      }));
+      setPhotoName('');
+      setPhotoPreview(null);
+      setFormData((prev) => ({
+        ...prev,
+        photo: null,
+      }));
       return;
     }
 
     setPhotoName(file.name);
+    setPhotoPreview((current) => {
+      if (current?.startsWith('blob:')) {
+        URL.revokeObjectURL(current);
+      }
+      return URL.createObjectURL(file);
+    });
     setFormData((prev) => ({
       ...prev,
       photo: file,
@@ -133,10 +182,10 @@ export default function ReportPage() {
   };
 
   const handleUseMyLocation = () => {
-    setLocationStatus('Getting location...');
+    setLocationStatus(t('report.gettingLocation'));
 
     if (!navigator.geolocation) {
-      setLocationStatus('Geolocation is not supported by your browser');
+      setLocationStatus(t('report.geolocationUnsupported'));
       return;
     }
 
@@ -148,15 +197,15 @@ export default function ReportPage() {
           latitude: latitude.toFixed(6),
           longitude: longitude.toFixed(6),
         }));
-        setLocationStatus('Location obtained successfully. You can adjust if needed.');
+        setLocationStatus(t('report.locationSuccess'));
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
           setLocationStatus(
-            'Location permission denied. Please enable it in your browser settings.'
+            t('report.locationDenied')
           );
         } else {
-          setLocationStatus('Unable to get location. Please try again.');
+          setLocationStatus(t('report.locationFailed'));
         }
       }
     );
@@ -184,19 +233,21 @@ export default function ReportPage() {
       setIsSubmitting(true);
       setSubmitState(null);
 
+      const formPayload = new FormData();
+      formPayload.append('title', formData.title);
+      formPayload.append('category', formData.category);
+      formPayload.append('description', formData.description);
+      formPayload.append('latitude', formData.latitude);
+      formPayload.append('longitude', formData.longitude);
+      formPayload.append('location', '');
+
+      if (formData.photo) {
+        formPayload.append('photo', formData.photo);
+      }
+
       const response = await fetch('/api/reports', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          category: formData.category,
-          description: formData.description,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          location: '',
-        }),
+        body: formPayload,
       });
 
       const data = (await response.json()) as {
@@ -208,18 +259,26 @@ export default function ReportPage() {
 
       if (!response.ok || !data.success) {
         if (data.errors) {
-          setErrors({ ...nextErrors, ...data.errors });
+          setErrors({
+            ...nextErrors,
+            ...Object.fromEntries(
+              Object.entries(data.errors).map(([key, message]) => [
+                key,
+                translateApiMessage(message, t, 'report.validationError'),
+              ])
+            ),
+          });
         }
         setSubmitState({
           success: false,
-          message: data.message || 'Unable to submit report right now.',
+          message: translateApiMessage(data.message, t, 'report.submitError'),
         });
         return;
       }
 
       setSubmitState({
         success: true,
-        message: data.message || 'Report submitted successfully.',
+        message: translateApiMessage(data.message, t, 'report.submittedSuccess'),
       });
       setFormData({
         title: '',
@@ -230,6 +289,12 @@ export default function ReportPage() {
         longitude: '',
       });
       setPhotoName('');
+      setPhotoPreview((current) => {
+        if (current?.startsWith('blob:')) {
+          URL.revokeObjectURL(current);
+        }
+        return null;
+      });
       setLocationStatus('');
       setTouched({});
       setErrors({});
@@ -241,11 +306,11 @@ export default function ReportPage() {
       console.error('Report submission failed:', error);
       setSubmitState({
         success: false,
-        message: 'Unable to submit the report right now. Please try again later.',
+        message: t('report.submitError'),
       });
       setErrors((prev) => ({
         ...prev,
-        submit: 'Unable to submit the report right now. Please try again later.',
+        submit: t('report.submitError'),
       }));
     } finally {
       setIsSubmitting(false);
@@ -274,11 +339,11 @@ export default function ReportPage() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Report Submitted</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('report.submitted')}</h2>
               <p className="text-gray-600 mb-6">{submitState.message}</p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-green-800">
-                  Your civic issue has been saved to the database and is now pending review.
+                  {t('report.savedPending')}
                 </p>
               </div>
               <button
@@ -287,17 +352,17 @@ export default function ReportPage() {
                 }}
                 className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
               >
-                Submit Another Report
+                {t('report.submitAnother')}
               </button>
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                  Report a Civic Issue
+                  {t('report.title')}
                 </h1>
                 <p className="text-gray-600 text-lg">
-                  Help improve Baramati by reporting problems in your area.
+                  {t('report.intro')}
                 </p>
               </div>
 
@@ -310,7 +375,7 @@ export default function ReportPage() {
               <form onSubmit={handleSubmit} className="space-y-8">
                 <section className="border-b border-gray-200 pb-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                    Issue Information
+                    {t('report.issueInformation')}
                   </h2>
 
                   <div className="mb-6">
@@ -318,7 +383,7 @@ export default function ReportPage() {
                       htmlFor="title"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Issue Title *
+                      {t('report.issueTitle')} *
                     </label>
                     <input
                       type="text"
@@ -327,7 +392,7 @@ export default function ReportPage() {
                       value={formData.title}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder="e.g. Large pothole near main road"
+                      placeholder={t('report.titlePlaceholder')}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                         touched.title && errors.title
                           ? 'border-red-500 focus:ring-red-500'
@@ -344,7 +409,7 @@ export default function ReportPage() {
                       htmlFor="category"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Category *
+                      {t('common.category')} *
                     </label>
                     <select
                       id="category"
@@ -358,10 +423,10 @@ export default function ReportPage() {
                           : 'border-gray-300'
                       }`}
                     >
-                      <option value="">-- Select a category --</option>
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                      <option value="">{t('report.selectCategory')}</option>
+                      {categories.map(([value, key]) => (
+                        <option key={value} value={value}>
+                          {t(key)}
                         </option>
                       ))}
                     </select>
@@ -375,7 +440,7 @@ export default function ReportPage() {
                       htmlFor="description"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Description *
+                      {t('common.description')} *
                     </label>
                     <textarea
                       id="description"
@@ -383,7 +448,7 @@ export default function ReportPage() {
                       value={formData.description}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder="Please describe the issue in detail. What is the problem? Where exactly is it located? Any other relevant information?"
+                      placeholder={t('report.descriptionPlaceholder')}
                       rows={5}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none ${
                         touched.description && errors.description
@@ -394,20 +459,20 @@ export default function ReportPage() {
                     {touched.description && errors.description && (
                       <p className="text-red-600 text-sm mt-1">{errors.description}</p>
                     )}
-                    <p className="text-gray-500 text-xs mt-1">Minimum 20 characters</p>
+                    <p className="text-gray-500 text-xs mt-1">{t('report.minimumCharacters')}</p>
                   </div>
                 </section>
 
                 <section className="border-b border-gray-200 pb-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                    Photo (Optional)
+                    {t('report.photoOptional')}
                   </h2>
                   <div>
                     <label
                       htmlFor="photo"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Upload a Photo
+                      {t('report.uploadPhoto')}
                     </label>
                     <div className="flex items-center gap-4">
                       <input
@@ -415,30 +480,41 @@ export default function ReportPage() {
                         id="photo"
                         name="photo"
                         onChange={handleFileChange}
-                        accept="image/jpg, image/jpeg, image/png, image/webp"
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-medium hover:file:bg-blue-100"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={isSubmitting}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-medium hover:file:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </div>
-                    {photoName && <p className="text-sm text-gray-600 mt-2">Selected: {photoName}</p>}
+                    <p className="mt-2 text-xs text-gray-500">{t('report.photoTypes')}</p>
+                    {photoName && <p className="text-sm text-gray-600 mt-2">{t('report.selectedPhoto', { name: photoName })}</p>}
+                    {photoPreview && (
+                      <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                        <img
+                          src={photoPreview}
+                          alt={t('report.photoPreview')}
+                          className="h-48 w-full object-cover"
+                        />
+                      </div>
+                    )}
                     {errors.photo && <p className="text-red-600 text-sm mt-1">{errors.photo}</p>}
                   </div>
                 </section>
 
                 <section>
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                    Location Details
+                    {t('report.locationDetails')}
                   </h2>
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Coordinates
+                        {t('report.coordinates')}
                       </label>
                       <button
                         type="button"
                         onClick={handleUseMyLocation}
                         className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
                       >
-                        Use My Location
+                        {t('report.useMyLocation')}
                       </button>
                     </div>
 
@@ -449,7 +525,7 @@ export default function ReportPage() {
                           name="latitude"
                           value={formData.latitude}
                           onChange={handleChange}
-                          placeholder="Latitude"
+                          placeholder={t('report.latitude')}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                         />
                       </div>
@@ -459,7 +535,7 @@ export default function ReportPage() {
                           name="longitude"
                           value={formData.longitude}
                           onChange={handleChange}
-                          placeholder="Longitude"
+                          placeholder={t('report.longitude')}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                         />
                       </div>
@@ -485,7 +561,7 @@ export default function ReportPage() {
                   disabled={isSubmitting}
                   className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
                 >
-                  {isSubmitting ? 'Submitting Report...' : 'Submit Report'}
+                  {isSubmitting ? t('report.submitting') : t('report.submit')}
                 </button>
               </form>
             </div>

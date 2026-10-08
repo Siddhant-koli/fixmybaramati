@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/lib/session';
+import { TranslatedText } from '@/lib/i18n';
 import ReportForm from './ReportForm';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ export default async function ReportPage() {
     return (
       <main className="min-h-screen bg-gray-50 px-4 py-12">
         <p role="alert" className="mx-auto max-w-2xl text-red-700">
-          Unable to verify your session right now. Please try again later.
+          <TranslatedText k="dashboard.sessionError" />
         </p>
       </main>
     );

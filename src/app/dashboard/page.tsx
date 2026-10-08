@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
+import {
+  LocalizedDate,
+  TranslatedStatus,
+  TranslatedText,
+  type TranslationKey,
+} from '@/lib/i18n';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 
@@ -17,7 +23,7 @@ export default async function DashboardPage() {
         <Navbar />
         <main className="min-h-screen bg-gray-50 px-4 py-12">
           <p role="alert" className="mx-auto max-w-6xl text-red-700">
-            Unable to verify your session right now. Please try again later.
+            <TranslatedText k="dashboard.sessionError" />
           </p>
         </main>
       </>
@@ -50,7 +56,7 @@ export default async function DashboardPage() {
         <Navbar />
         <main className="min-h-screen bg-gray-50 px-4 py-12">
           <p role="alert" className="mx-auto max-w-6xl text-red-700">
-            Unable to load your dashboard right now. Please try again later.
+            <TranslatedText k="dashboard.loadError" />
           </p>
         </main>
       </>
@@ -60,51 +66,57 @@ export default async function DashboardPage() {
   const [reportsSubmitted, reportsResolved, reportsInProgress, upvotes, recentReports] =
     dashboardData;
 
-  const stats = [
+  const stats: { title: TranslationKey; value: number; icon: string; color: string }[] = [
     {
-      title: 'Reports Submitted',
+      title: 'dashboard.reportsSubmitted',
       value: reportsSubmitted,
       icon: '📋',
       color: 'text-blue-600',
     },
     {
-      title: 'Reports Resolved',
+      title: 'dashboard.reportsResolved',
       value: reportsResolved,
       icon: '✅',
       color: 'text-green-600',
     },
     {
-      title: 'In Progress',
+      title: 'dashboard.inProgress',
       value: reportsInProgress,
       icon: '⏳',
       color: 'text-orange-600',
     },
     {
-      title: 'Community Upvotes',
+      title: 'dashboard.communityUpvotes',
       value: upvotes._sum.upvotes ?? 0,
       icon: '👍',
       color: 'text-purple-600',
     },
   ];
 
-  const actions = [
+  const actions: {
+    title: TranslationKey;
+    description: TranslationKey;
+    href: string;
+    icon: string;
+    primary: boolean;
+  }[] = [
     {
-      title: 'Report an Issue',
-      description: 'Submit a new civic issue in your area',
+      title: 'dashboard.newReport',
+      description: 'dashboard.newReportDescription',
       href: '/report',
       icon: '🔴',
       primary: true,
     },
     {
-      title: 'My Reports',
-      description: 'View and track your submitted reports',
+      title: 'dashboard.myReports',
+      description: 'dashboard.myReportsDescription',
       href: '/my-reports',
       icon: '📑',
       primary: false,
     },
     {
-      title: 'Browse Reports',
-      description: 'See all civic issues in Baramati',
+      title: 'dashboard.browseReports',
+      description: 'dashboard.browseReportsDescription',
       href: '/reports',
       icon: '🔍',
       primary: false,
@@ -119,10 +131,10 @@ export default async function DashboardPage() {
         <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-8 md:py-12">
           <div className="max-w-6xl mx-auto px-4">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Citizen Dashboard
+              <TranslatedText k="dashboard.title" />
             </h1>
             <p className="text-blue-100 text-lg">
-              Track your civic reports and help make Baramati better.
+              <TranslatedText k="dashboard.description" />
             </p>
           </div>
         </section>
@@ -132,14 +144,14 @@ export default async function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-8">
             <p className="text-gray-700 text-lg">
-              Welcome, {user.fullName}! Here's an overview of your civic contributions.
+              <TranslatedText k="dashboard.welcome" values={{ name: user.fullName }} />
             </p>
           </div>
 
           {/* Quick Actions Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Quick Actions
+              <TranslatedText k="dashboard.quickActions" />
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {actions.map((action, index) => (
@@ -153,13 +165,15 @@ export default async function DashboardPage() {
                   }`}
                 >
                   <div className="text-3xl mb-3">{action.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{action.title}</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    <TranslatedText k={action.title} />
+                  </h3>
                   <p
                     className={`text-sm ${
                       action.primary ? 'text-blue-100' : 'text-gray-600'
                     }`}
                   >
-                    {action.description}
+                    <TranslatedText k={action.description} />
                   </p>
                 </a>
               ))}
@@ -169,7 +183,7 @@ export default async function DashboardPage() {
           {/* Statistics Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Your Statistics
+              <TranslatedText k="dashboard.statistics" />
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.map((stat, index) => (
@@ -181,7 +195,7 @@ export default async function DashboardPage() {
                     {stat.icon}
                   </div>
                   <h3 className="text-gray-600 text-sm font-medium mb-2">
-                    {stat.title}
+                    <TranslatedText k={stat.title} />
                   </h3>
                   <p className="text-4xl font-bold text-gray-900">
                     {stat.value}
@@ -194,7 +208,7 @@ export default async function DashboardPage() {
           {/* Recent Reports Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Recent Reports
+              <TranslatedText k="dashboard.recentReports" />
             </h2>
             {recentReports.length ? (
               <div className="bg-white rounded-lg shadow-md divide-y divide-gray-200">
@@ -206,7 +220,7 @@ export default async function DashboardPage() {
                   >
                     <span className="font-semibold text-gray-900">{report.title}</span>
                     <span className="text-sm text-gray-600">
-                      {report.status.replace('_', ' ')} · {report.createdAt.toLocaleDateString('en-IN')}
+                      <TranslatedStatus status={report.status} /> · <LocalizedDate date={report.createdAt} />
                     </span>
                   </a>
                 ))}
@@ -215,16 +229,16 @@ export default async function DashboardPage() {
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
                 <div className="text-5xl mb-4">📭</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No reports yet
+                  <TranslatedText k="dashboard.noReports" />
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Start by reporting a civic issue in your area to see your submissions here.
+                  <TranslatedText k="dashboard.noReportsDescription" />
                 </p>
                 <a
                   href="/report"
                   className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
-                  Report an Issue
+                  <TranslatedText k="dashboard.newReport" />
                 </a>
               </div>
             )}
@@ -233,7 +247,7 @@ export default async function DashboardPage() {
           {/* Help & Resources Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Help & Resources
+              <TranslatedText k="dashboard.helpResources" />
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <a
@@ -241,10 +255,10 @@ export default async function DashboardPage() {
                 className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition hover:border-blue-600 border border-transparent"
               >
                 <h3 className="font-semibold text-gray-900 mb-2">
-                  📖 How to Report
+                  📖 <TranslatedText k="dashboard.howToReport" />
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Learn how to submit a civic issue effectively
+                  <TranslatedText k="dashboard.howToReportDescription" />
                 </p>
               </a>
               <a
@@ -252,10 +266,10 @@ export default async function DashboardPage() {
                 className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition hover:border-blue-600 border border-transparent"
               >
                 <h3 className="font-semibold text-gray-900 mb-2">
-                  ❓ FAQ
+                  ❓ <TranslatedText k="home.faq" />
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Find answers to common questions
+                  <TranslatedText k="dashboard.faqDescription" />
                 </p>
               </a>
               <a
@@ -263,10 +277,10 @@ export default async function DashboardPage() {
                 className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition hover:border-blue-600 border border-transparent"
               >
                 <h3 className="font-semibold text-gray-900 mb-2">
-                  📞 Contact Support
+                  📞 <TranslatedText k="dashboard.contactSupport" />
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Get help from our support team
+                  <TranslatedText k="dashboard.contactSupportDescription" />
                 </p>
               </a>
               <a
@@ -274,10 +288,10 @@ export default async function DashboardPage() {
                 className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition hover:border-blue-600 border border-transparent"
               >
                 <h3 className="font-semibold text-gray-900 mb-2">
-                  🏠 Back to Home
+                  🏠 <TranslatedText k="common.backHome" />
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Return to the homepage
+                  <TranslatedText k="dashboard.backHomeDescription" />
                 </p>
               </a>
             </div>
@@ -286,10 +300,10 @@ export default async function DashboardPage() {
           {/* Information Banner */}
           <section className="bg-blue-50 border border-blue-200 rounded-lg p-6 md:p-8">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              ℹ️ About Your Dashboard
+              ℹ️ <TranslatedText k="dashboard.aboutTitle" />
             </h3>
             <p className="text-blue-800">
-              This dashboard shows your submitted reports and community impact.
+              <TranslatedText k="dashboard.aboutDescription" />
             </p>
           </section>
         </div>
