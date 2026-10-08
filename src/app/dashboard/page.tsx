@@ -12,6 +12,11 @@ import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
+type RecentReport = Pick<
+  Awaited<ReturnType<typeof prisma.report.findMany>>[number],
+  'id' | 'title' | 'status' | 'createdAt'
+>;
+
 export default async function DashboardPage() {
   let user: Awaited<ReturnType<typeof getCurrentUser>>;
   try {
@@ -212,7 +217,7 @@ export default async function DashboardPage() {
             </h2>
             {recentReports.length ? (
               <div className="bg-white rounded-lg shadow-md divide-y divide-gray-200">
-                {recentReports.map((report) => (
+                {recentReports.map((report: RecentReport) => (
                   <a
                     key={report.id}
                     href={`/report/${report.id}`}

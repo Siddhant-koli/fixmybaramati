@@ -1,4 +1,3 @@
-import type { Report } from '@prisma/client';
 import { redirect } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
@@ -14,7 +13,7 @@ import { getCurrentUser } from '@/lib/session';
 export const dynamic = 'force-dynamic';
 
 type UserReport = Pick<
-  Report,
+  Awaited<ReturnType<typeof prisma.report.findMany>>[number],
   'id' | 'title' | 'category' | 'status' | 'createdAt' | 'location' | 'photoUrl' | 'upvotes'
 >;
 
