@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
@@ -9,6 +8,8 @@ import {
   uploadReportImage,
   validateUploadedImage,
 } from '@/lib/storage';
+
+type ReportRow = Awaited<ReturnType<typeof prisma.report.findMany>>[number];
 
 const validateTitle = (value: string) => {
   const trimmed = value.trim();
@@ -94,14 +95,13 @@ const parseReportRequest = async (request: Request) => {
 
 export async function GET() {
   try {
-    const reports: Prisma.Result<typeof prisma.report, {}, 'findMany'> =
-      await prisma.report.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+    const reports = await prisma.report.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
 
     return NextResponse.json({
       success: true,
-      reports: reports.map((report) => ({
+      reports: reports.map((report: ReportRow) => ({
         id: report.id,
         title: report.title,
         category: report.category,
