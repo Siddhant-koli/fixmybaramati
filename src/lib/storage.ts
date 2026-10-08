@@ -1,4 +1,4 @@
-import { del, put } from '@vercel/blob';
+import { del, get, put } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 
@@ -155,12 +155,24 @@ export async function uploadReportImage(file: File, userId: string): Promise<{ u
   const path = `reports/${userId}/${Date.now()}-${randomUUID()}.${extension}`;
 
   const uploaded = await put(path, file, {
-    access: 'public',
+    access: 'private',
     addRandomSuffix: false,
     contentType: mimeType,
   });
 
   return { url: uploaded.url };
+}
+
+export async function getStoredImage(imageUrl: string) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    throw new Error(PHOTO_STORAGE_NOT_CONFIGURED_MESSAGE);
+  }
+
+  return get(imageUrl, {
+    access: 'private',
+    token,
+  });
 }
 
 export async function deleteStoredImage(imageUrl: string | null): Promise<void> {

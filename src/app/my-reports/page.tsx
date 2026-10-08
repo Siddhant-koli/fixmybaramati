@@ -8,6 +8,7 @@ import {
   TranslatedText,
 } from '@/lib/i18n';
 import prisma from '@/lib/prisma';
+import { getReportPhotoUrl } from '@/lib/report-photo';
 import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -117,7 +118,7 @@ export default async function MyReportsPage() {
                     {report.photoUrl && (
                       <div className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
                         <img
-                          src={report.photoUrl}
+                          src={getReportPhotoUrl(report.id)}
                           alt={report.title}
                           onError={(event) => {
                             event.currentTarget.style.display = 'none';

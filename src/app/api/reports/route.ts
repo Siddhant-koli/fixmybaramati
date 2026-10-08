@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { getReportPhotoUrl } from '@/lib/report-photo';
 import {
   deleteStoredImage,
   PHOTO_STORAGE_NOT_CONFIGURED_MESSAGE,
@@ -109,7 +110,7 @@ export async function GET() {
         latitude: report.latitude,
         longitude: report.longitude,
         location: report.location,
-        photoUrl: report.photoUrl,
+        photoUrl: report.photoUrl ? getReportPhotoUrl(report.id) : null,
         status: report.status,
         upvotes: report.upvotes,
         createdAt: report.createdAt.toISOString(),
@@ -210,7 +211,7 @@ export async function POST(request: Request) {
             latitude: report.latitude,
             longitude: report.longitude,
             location: report.location,
-            photoUrl: report.photoUrl,
+            photoUrl: report.photoUrl ? getReportPhotoUrl(report.id) : null,
             status: report.status,
             upvotes: report.upvotes,
             createdAt: report.createdAt.toISOString(),

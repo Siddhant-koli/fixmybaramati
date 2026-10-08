@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import prisma from '@/lib/prisma';
+import { getReportPhotoUrl } from '@/lib/report-photo';
 
 export async function GET(
   _request: Request,
@@ -30,7 +31,7 @@ export async function GET(
         latitude: report.latitude,
         longitude: report.longitude,
         location: report.location,
-        photoUrl: report.photoUrl,
+        photoUrl: report.photoUrl ? getReportPhotoUrl(report.id) : null,
         status: report.status,
         upvotes: report.upvotes,
         createdAt: report.createdAt.toISOString(),
