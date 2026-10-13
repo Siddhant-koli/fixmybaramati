@@ -1,18 +1,14 @@
 'use client';
 
 import Navbar from '@/components/Navbar';
-import { useTranslation } from '@/lib/i18n';
+import { translateCategory, useTranslation } from '@/lib/i18n';
+import { REPORT_CATEGORIES } from '@/lib/report-categories';
 
 export default function Home() {
   const { t } = useTranslation();
-  const categories = [
-    { name: t('category.potholes'), icon: '🕳️' },
-    { name: t('category.garbage'), icon: '🗑️' },
-    { name: t('category.streetLights'), icon: '💡' },
-    { name: t('category.water'), icon: '💧' },
-    { name: t('category.drainage'), icon: '🌊' },
-    { name: t('category.roads'), icon: '🛣️' },
-  ];
+  const categories = REPORT_CATEGORIES.filter(({ value }) => value !== 'Other').map(
+    ({ value, icon }) => ({ name: translateCategory(value, t), icon })
+  );
 
   const steps = [
     {

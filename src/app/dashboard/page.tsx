@@ -40,9 +40,8 @@ export default async function DashboardPage() {
       prisma.report.count({ where: { reporterId: user.id } }),
       prisma.report.count({ where: { reporterId: user.id, status: 'RESOLVED' } }),
       prisma.report.count({ where: { reporterId: user.id, status: 'IN_PROGRESS' } }),
-      prisma.report.aggregate({
-        where: { reporterId: user.id },
-        _sum: { upvotes: true },
+      prisma.reportVote.count({
+        where: { report: { reporterId: user.id } },
       }),
       prisma.report.findMany({
         where: { reporterId: user.id },
@@ -68,7 +67,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [reportsSubmitted, reportsResolved, reportsInProgress, upvotes, recentReports] =
+  const [reportsSubmitted, reportsResolved, reportsInProgress, communityVotes, recentReports] =
     dashboardData;
 
   const stats: { title: TranslationKey; value: number; icon: string; color: string }[] = [
@@ -92,7 +91,7 @@ export default async function DashboardPage() {
     },
     {
       title: 'dashboard.communityUpvotes',
-      value: upvotes._sum.upvotes ?? 0,
+      value: communityVotes,
       icon: '👍',
       color: 'text-purple-600',
     },

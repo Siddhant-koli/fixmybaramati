@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import ReportVoteButton from '@/components/ReportVoteButton';
 import {
   formatLocaleDate,
   translateCategory,
@@ -20,6 +21,8 @@ type ReportDetails = {
   latitude: number | null;
   longitude: number | null;
   upvotes: number;
+  hasVoted: boolean;
+  isAuthenticated: boolean;
   createdAt: string;
   photoUrl: string | null;
 };
@@ -63,8 +66,6 @@ export default function ReportDetailsPage() {
   const [report, setReport] = useState<ReportDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [upvoteCount, setUpvoteCount] = useState(0);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -87,7 +88,6 @@ export default function ReportDetailsPage() {
         const nextReport = data.report ?? null;
         setReport(nextReport);
         setImageError(false);
-        setUpvoteCount(nextReport?.upvotes ?? 0);
       } catch {
         setError(t('detail.loadError'));
       } finally {
@@ -99,13 +99,6 @@ export default function ReportDetailsPage() {
       void loadReport();
     }
   }, [id, t]);
-
-  const handleUpvote = () => {
-    if (!hasUpvoted) {
-      setUpvoteCount((current) => current + 1);
-      setHasUpvoted(true);
-    }
-  };
 
   if (loading) {
     return (
@@ -333,22 +326,24 @@ export default function ReportDetailsPage() {
               <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">👥 {t('detail.communitySupport')}</h3>
 
-                <div className="bg-blue-50 rounded-lg p-6 text-center mb-4 border border-blue-200">
-                  <p className="text-4xl font-bold text-blue-600 mb-1">{upvoteCount}</p>
-                  <p className="text-sm text-gray-600">{t('detail.citizensSupport')}</p>
-                </div>
-
-                <button
-                  onClick={handleUpvote}
-                  disabled={hasUpvoted}
-                  className={`w-full py-3 rounded-lg font-semibold transition ${
-                    hasUpvoted
-                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {hasUpvoted ? t('detail.alreadyUpvoted') : t('detail.upvote')}
-                </button>
+                <p className="mb-4 text-sm text-gray-600">{t('detail.citizensSupport')}</p>
+                <ReportVoteButton
+                  reportId={report.id}
+                  initialUpvotes={report.upvotes}
+                  initialHasVoted={report.hasVoted}
+                  isAuthenticated={report.isAuthenticated}
+                  onVoteChange={(voteState) =>
+                    setReport((current) =>
+                      current
+                        ? {
+                            ...current,
+                            upvotes: voteState.upvotes,
+                            hasVoted: voteState.hasVoted,
+                          }
+                        : current
+                    )
+                  }
+                />
               </div>
 
               <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
@@ -368,7 +363,7 @@ export default function ReportDetailsPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 text-sm">{t('common.upvotes')}</span>
-                    <span className="font-semibold text-gray-900">{upvoteCount}</span>
+                    <span className="font-semibold text-gray-900">{report.upvotes}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 text-sm">{t('common.submitted')}</span>

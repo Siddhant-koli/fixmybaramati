@@ -15,6 +15,7 @@ model User {
   updatedAt    DateTime @updatedAt
   reports      Report[]
   sessions     Session[]
+  votes        ReportVote[]
 
   @@map("users")
 }
@@ -41,8 +42,24 @@ model Report {
   updatedAt   DateTime     @updatedAt
   reporterId  String?
   reporter    User?        @relation(fields: [reporterId], references: [id])
+  votes       ReportVote[]
 
+  @@index([status, createdAt])
+  @@index([category, createdAt])
   @@map("reports")
+}
+
+model ReportVote {
+  id        String   @id @default(cuid())
+  reportId  String
+  userId    String
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, userId])
+  @@index([userId])
+  @@map("report_votes")
 }
 
 model Session {

@@ -15,8 +15,10 @@ export const dynamic = 'force-dynamic';
 
 type UserReport = Pick<
   Awaited<ReturnType<typeof prisma.report.findMany>>[number],
-  'id' | 'title' | 'category' | 'status' | 'createdAt' | 'location' | 'photoUrl' | 'upvotes'
->;
+  'id' | 'title' | 'category' | 'status' | 'createdAt' | 'location' | 'photoUrl'
+> & {
+  _count: { votes: number };
+};
 
 const statusClass = (status: string) => {
   switch (status) {
@@ -64,7 +66,7 @@ export default async function MyReportsPage() {
         createdAt: true,
         location: true,
         photoUrl: true,
-        upvotes: true,
+        _count: { select: { votes: true } },
       },
     });
   } catch (error) {
@@ -131,7 +133,7 @@ export default async function MyReportsPage() {
                     <div className="mb-4 flex flex-col gap-3 text-sm text-gray-600 sm:flex-row sm:gap-6">
                       <span>📍 {report.location || <TranslatedText k="common.locationUnknown" />}</span>
                       <span>📅 <LocalizedDate date={report.createdAt} /></span>
-                      <span>👍 <TranslatedText k="myReports.upvotesCount" values={{ count: report.upvotes }} /></span>
+                      <span>👍 <TranslatedText k="myReports.upvotesCount" values={{ count: report._count.votes }} /></span>
                     </div>
 
                     <div className="border-t border-gray-200 pt-4 text-right">

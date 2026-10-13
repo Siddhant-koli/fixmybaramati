@@ -11,24 +11,6 @@ export interface User {
   updatedAt: Date;
 }
 
-export interface Report {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  latitude: number;
-  longitude: number;
-  photoUrl?: string;
-  status: 'open' | 'in_progress' | 'resolved';
-  resolved: boolean;
-  resolvedNotes?: string;
-  resolvedAt?: Date;
-  upvotes: number;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface Admin {
   id: string;
   adminId: string;

@@ -10,7 +10,8 @@ The project currently includes:
 - user registration and login flows
 - server-side session authentication
 - protected dashboard and report submission pages
-- public report listing and report details
+- public report discovery with database-backed search, category/status filters, sorting, and pagination
+- report details with persistent, authenticated community votes
 - optional report photo uploads backed by a real object-storage abstraction
 
 ## Technology stack
@@ -71,7 +72,7 @@ npx prisma generate
 npx prisma migrate deploy
 ```
 
-For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database before running migrations. During Vercel Production builds, the build script runs `prisma migrate deploy` with Vercel's Production `DATABASE_URL` before building the app. Preview and local builds do not run migrations.
+For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database before running migrations. Prisma CLI commands load `DATABASE_URL` from `.env.local` when it is not already present in the process environment. During Vercel Production builds, the build script runs `prisma migrate deploy` with Vercel's Production `DATABASE_URL` before building the app. Preview and local builds do not run migrations.
 
 ## Production deployment prerequisites
 
@@ -88,13 +89,14 @@ This project currently includes:
 - bcrypt password hashing
 - hashed session tokens in the database
 - server-side session checks for protected routes
+- one persistent vote per authenticated citizen per report, enforced by a database unique constraint
+- report ownership derived from the authenticated session
 - image validation for supported upload types
 - authenticated report creation based on the server session
 
 This project does not claim to include:
 - admin/authority dashboard
 - role-based access control
-- fake upvotes or simulated persistence
 - pseudoproduct demo-only storage behavior
 - production-ready deployment without the required infrastructure
 

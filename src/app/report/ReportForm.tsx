@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { translateApiMessage, useTranslation } from '@/lib/i18n';
+import { translateApiMessage, translateCategory, useTranslation } from '@/lib/i18n';
+import { REPORT_CATEGORIES } from '@/lib/report-categories';
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -26,16 +27,6 @@ export default function ReportPage() {
   const [photoName, setPhotoName] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState('');
-
-  const categories = [
-    ['Potholes', 'category.potholes'],
-    ['Garbage', 'category.garbage'],
-    ['Street Lights', 'category.streetLights'],
-    ['Water', 'category.water'],
-    ['Drainage', 'category.drainage'],
-    ['Roads', 'category.roads'],
-    ['Other', 'category.other'],
-  ] as const;
 
   useEffect(() => {
     return () => {
@@ -424,9 +415,9 @@ export default function ReportPage() {
                       }`}
                     >
                       <option value="">{t('report.selectCategory')}</option>
-                      {categories.map(([value, key]) => (
+                      {REPORT_CATEGORIES.map(({ value }) => (
                         <option key={value} value={value}>
-                          {t(key)}
+                          {translateCategory(value, t)}
                         </option>
                       ))}
                     </select>

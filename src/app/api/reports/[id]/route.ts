@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import prisma from '@/lib/prisma';
 import { getReportPhotoUrl } from '@/lib/report-photo';
+import { getCurrentUser } from '@/lib/session';
 
 export async function GET(
   _request: Request,
@@ -9,7 +10,25 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const report = await prisma.report.findUnique({ where: { id } });
+    const user = await getCurrentUser();
+    const report = await prisma.report.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        latitude: true,
+        longitude: true,
+        location: true,
+        photoUrl: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { votes: true } },
+        votes: { where: { userId: user?.id ?? '' }, select: { id: true } },
+      },
+    });
 
     if (!report) {
       return NextResponse.json(
@@ -33,10 +52,14 @@ export async function GET(
         location: report.location,
         photoUrl: report.photoUrl ? getReportPhotoUrl(report.id) : null,
         status: report.status,
-        upvotes: report.upvotes,
+        upvotes: report._count.votes,
+        hasVoted: user ? report.votes.length > 0 : false,
+        isAuthenticated: Boolean(user),
         createdAt: report.createdAt.toISOString(),
         updatedAt: report.updatedAt.toISOString(),
       },
+    }, {
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Error fetching report:', error);
