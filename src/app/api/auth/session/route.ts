@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({
       authenticated: Boolean(user),
       user: user
-        ? { id: user.id, fullName: user.fullName, mobile: user.mobile }
+        ? { id: user.id, fullName: user.fullName, mobile: user.mobile, role: user.role }
         : null,
     });
   } catch (error) {

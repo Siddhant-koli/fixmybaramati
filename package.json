@@ -8,6 +8,7 @@
     "build": "node scripts/vercel-build.js",
     "start": "next start",
     "lint": "eslint .",
+    "admin:promote": "node scripts/promote-admin.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

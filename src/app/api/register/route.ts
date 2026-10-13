@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         fullName,
         mobile: normalizedMobile,
         passwordHash,
+        role: 'CITIZEN',
       },
       select: {
         id: true,

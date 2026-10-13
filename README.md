@@ -74,6 +74,10 @@ npx prisma migrate deploy
 
 For local database setup, make sure PostgreSQL is running and that `DATABASE_URL` points to a valid database before running migrations. Prisma CLI commands load `DATABASE_URL` from `.env.local` when it is not already present in the process environment. During Vercel Production builds, the build script runs `prisma migrate deploy` with Vercel's Production `DATABASE_URL` before building the app. Preview and local builds do not run migrations.
 
+## Administrator provisioning
+
+Apply the database migrations, then sign up or identify the existing account that should administer the application. From an operator-controlled terminal, run `npm run admin:promote -- <10-digit-mobile-number>` to promote that exact existing account. The command requires `DATABASE_URL` (loaded from `.env.local` when present), refuses invalid identifiers, and does not create accounts. Never expose this command through a public route or accept roles during registration.
+
 ## Production deployment prerequisites
 
 For production deployment, the project needs:

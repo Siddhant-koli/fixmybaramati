@@ -43,6 +43,7 @@ export const getCurrentUser = async () => {
           id: true,
           fullName: true,
           mobile: true,
+          role: true,
         },
       },
     },

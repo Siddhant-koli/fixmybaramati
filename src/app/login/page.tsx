@@ -108,6 +108,7 @@ export default function LoginPage() {
         const data = (await response.json()) as {
           success?: boolean;
           message?: string;
+          user?: { role?: string };
         };
 
         if (!response.ok || !data.success) {
@@ -115,7 +116,7 @@ export default function LoginPage() {
           return;
         }
 
-        router.push('/dashboard');
+        router.push(data.user?.role === 'ADMIN' ? '/admin' : '/dashboard');
         router.refresh();
       } catch (error) {
         console.error('Login request failed:', error);

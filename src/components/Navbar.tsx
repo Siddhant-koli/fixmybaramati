@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LanguageSwitcher, translateApiMessage, useTranslation } from '@/lib/i18n';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [logoutError, setLogoutError] = useState('');
 
   useEffect(() => {
@@ -17,17 +19,26 @@ export default function Navbar() {
     fetch('/api/auth/session')
       .then(async (response) => {
         if (!response.ok) throw new Error('Unable to verify session');
-        const data = (await response.json()) as { authenticated?: boolean };
-        if (isActive) setIsAuthenticated(data.authenticated === true);
+        const data = (await response.json()) as {
+          authenticated?: boolean;
+          user?: { role?: string } | null;
+        };
+        if (isActive) {
+          setIsAuthenticated(data.authenticated === true);
+          setIsAdmin(data.user?.role === 'ADMIN');
+        }
       })
       .catch(() => {
-        if (isActive) setIsAuthenticated(false);
+        if (isActive) {
+          setIsAuthenticated(false);
+          setIsAdmin(false);
+        }
       });
 
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [pathname]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -41,6 +52,7 @@ export default function Navbar() {
         throw new Error(t('nav.logoutError'));
       }
       setIsAuthenticated(false);
+      setIsAdmin(false);
       router.push('/login');
       router.refresh();
     } catch (error) {
@@ -75,6 +87,11 @@ export default function Navbar() {
                 <a href="/dashboard" className="text-gray-700 hover:text-blue-600 transition">
                   {t('nav.dashboard')}
                 </a>
+                {isAdmin && (
+                  <a href="/admin" className="text-gray-700 hover:text-blue-600 transition">
+                    {t('admin.portal')}
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -159,6 +176,15 @@ export default function Navbar() {
                 >
                   {t('nav.dashboard')}
                 </a>
+                {isAdmin && (
+                  <a
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-gray-700 hover:text-blue-600 transition"
+                  >
+                    {t('admin.portal')}
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => {
