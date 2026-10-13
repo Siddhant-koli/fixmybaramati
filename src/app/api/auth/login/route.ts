@@ -41,6 +41,7 @@ export async function POST(request: Request) {
         id: user.id,
         fullName: user.fullName,
         mobile: user.mobile,
+        role: user.role,
       },
     });
     response.cookies.set(

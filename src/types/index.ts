@@ -1,6 +1,6 @@
 // Core database types (will be expanded in Phase 3 with Prisma)
 
-export type UserRole = 'citizen' | 'admin';
+export type UserRole = 'CITIZEN' | 'ADMIN';
 
 export interface User {
   id: string;
