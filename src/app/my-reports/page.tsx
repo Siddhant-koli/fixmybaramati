@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
+import ReportPhoto from '@/components/ReportPhoto';
 import {
   LocalizedDate,
   TranslatedCategory,
@@ -119,12 +120,9 @@ export default async function MyReportsPage() {
 
                     {report.photoUrl && (
                       <div className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                        <img
+                        <ReportPhoto
                           src={getReportPhotoUrl(report.id)}
                           alt={report.title}
-                          onError={(event) => {
-                            event.currentTarget.style.display = 'none';
-                          }}
                           className="h-48 w-full object-cover"
                         />
                       </div>
