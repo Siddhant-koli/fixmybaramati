@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import MapPreview from '@/components/MapPreview';
 import Navbar from '@/components/Navbar';
 import ReportVoteButton from '@/components/ReportVoteButton';
 import {
@@ -246,11 +247,13 @@ export default function ReportDetailsPage() {
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="bg-gray-100 rounded-lg p-8 text-center">
-                      <div className="text-4xl mb-2">🗺️</div>
-                      <h4 className="font-semibold text-gray-900 mb-1">{t('detail.mapPreview')}</h4>
-                      <p className="text-sm text-gray-600">{t('detail.coordinatesShown')}</p>
-                    </div>
+                    <MapPreview
+                      latitude={report.latitude}
+                      longitude={report.longitude}
+                      title={`${report.title} location map preview`}
+                      location={report.location}
+                      heightClassName="h-72"
+                    />
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import MapPreview from '@/components/MapPreview';
 import Navbar from '@/components/Navbar';
 import { translateApiMessage, translateCategory, useTranslation } from '@/lib/i18n';
 import { REPORT_CATEGORIES } from '@/lib/report-categories';
@@ -18,6 +19,7 @@ export default function ReportPage() {
     photo: null as File | null,
     latitude: '',
     longitude: '',
+    location: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -187,6 +189,7 @@ export default function ReportPage() {
           ...prev,
           latitude: latitude.toFixed(6),
           longitude: longitude.toFixed(6),
+          location: prev.location || t('report.useMyLocation'),
         }));
         setLocationStatus(t('report.locationSuccess'));
       },
@@ -230,7 +233,7 @@ export default function ReportPage() {
       formPayload.append('description', formData.description);
       formPayload.append('latitude', formData.latitude);
       formPayload.append('longitude', formData.longitude);
-      formPayload.append('location', '');
+      formPayload.append('location', formData.location.trim());
 
       if (formData.photo) {
         formPayload.append('photo', formData.photo);
@@ -278,6 +281,7 @@ export default function ReportPage() {
         photo: null,
         latitude: '',
         longitude: '',
+        location: '',
       });
       setPhotoName('');
       setPhotoPreview((current) => {
@@ -496,7 +500,7 @@ export default function ReportPage() {
                     {t('report.locationDetails')}
                   </h2>
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 gap-3">
                       <label className="block text-sm font-medium text-gray-700">
                         {t('report.coordinates')}
                       </label>
@@ -507,6 +511,24 @@ export default function ReportPage() {
                       >
                         {t('report.useMyLocation')}
                       </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <label
+                        htmlFor="location"
+                        className="mb-2 block text-sm font-medium text-gray-700"
+                      >
+                        {t('detail.address')}
+                      </label>
+                      <input
+                        id="location"
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        placeholder={t('common.locationUnknown')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -544,6 +566,15 @@ export default function ReportPage() {
                     {locationStatus && (
                       <p className="text-sm text-gray-600 mt-2">{locationStatus}</p>
                     )}
+                  </div>
+
+                  <div className="mt-4">
+                    <MapPreview
+                      latitude={formData.latitude}
+                      longitude={formData.longitude}
+                      title="Report location preview"
+                      location={formData.location || undefined}
+                    />
                   </div>
                 </section>
 
