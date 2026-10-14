@@ -9,6 +9,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
+      return new Response('Invalid report ID.', { status: 400 });
+    }
+
     const report = await prisma.report.findUnique({
       where: { id },
       select: { photoUrl: true },
