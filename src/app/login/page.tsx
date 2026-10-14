@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { translateApiMessage, useTranslation } from '@/lib/i18n';
@@ -8,7 +8,9 @@ import { translateApiMessage, useTranslation } from '@/lib/i18n';
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [formData, setFormData] = useState({
+    fullName: '',
     mobileNumber: '',
     password: '',
   });
@@ -19,6 +21,10 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  useEffect(() => {
+    setIsAdminLogin(new URLSearchParams(window.location.search).get('flow') === 'admin');
+  }, []);
+
   // Validation functions
   const validateMobileNumber = (phone: string): string => {
     if (!phone) return t('auth.mobileRequired');
@@ -27,6 +33,12 @@ export default function LoginPage() {
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       return t('auth.mobilePrefix');
     }
+    return '';
+  };
+
+  const validateFullName = (fullName: string): string => {
+    if (!fullName.trim()) return t('auth.fullNameRequired');
+    if (fullName.trim().length < 2) return t('auth.fullNameLength');
     return '';
   };
 
@@ -65,6 +77,8 @@ export default function LoginPage() {
     let error = '';
     if (name === 'mobileNumber') {
       error = validateMobileNumber(formData.mobileNumber);
+    } else if (name === 'fullName') {
+      error = validateFullName(formData.fullName);
     } else if (name === 'password') {
       error = validatePassword(formData.password);
     }
@@ -84,11 +98,17 @@ export default function LoginPage() {
     // Validate all fields
     const newErrors: Record<string, string> = {};
 
-    newErrors.mobileNumber = validateMobileNumber(formData.mobileNumber);
+    if (isAdminLogin) {
+      newErrors.fullName = validateFullName(formData.fullName);
+    } else {
+      newErrors.mobileNumber = validateMobileNumber(formData.mobileNumber);
+    }
     newErrors.password = validatePassword(formData.password);
 
     setErrors(newErrors);
-    setTouched({ mobileNumber: true, password: true });
+    setTouched(isAdminLogin
+      ? { fullName: true, password: true }
+      : { mobileNumber: true, password: true });
 
     // Check if there are any errors
     const hasErrors = Object.values(newErrors).some((error) => error !== '');
@@ -100,10 +120,16 @@ export default function LoginPage() {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mobile: formData.mobileNumber,
-            password: formData.password,
-          }),
+          body: JSON.stringify(isAdminLogin
+            ? {
+                flow: 'admin',
+                fullName: formData.fullName,
+                password: formData.password,
+              }
+            : {
+                mobile: formData.mobileNumber,
+                password: formData.password,
+              }),
         });
         const data = (await response.json()) as {
           success?: boolean;
@@ -113,6 +139,11 @@ export default function LoginPage() {
 
         if (!response.ok || !data.success) {
           setSubmitError(translateApiMessage(data.message, t, 'auth.loginError'));
+          return;
+        }
+
+        if (isAdminLogin && data.user?.role !== 'ADMIN') {
+          setSubmitError(t('auth.invalidAdminCredentials'));
           return;
         }
 
@@ -135,10 +166,10 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {t('auth.welcomeBack')}
+              {isAdminLogin ? t('admin.loginPageTitle') : t('auth.welcomeBack')}
             </h1>
             <p className="text-gray-600">
-              {t('auth.loginDescription')}
+              {isAdminLogin ? t('admin.loginPageDescription') : t('auth.loginDescription')}
             </p>
           </div>
 
@@ -149,38 +180,63 @@ export default function LoginPage() {
                     {submitError}
                   </p>
                 )}
-                {/* Mobile Number Field */}
-                <div>
-                  <label
-                    htmlFor="mobileNumber"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    {t('auth.mobile')}
-                  </label>
-                  <input
-                    type="tel"
-                    id="mobileNumber"
-                    name="mobileNumber"
-                    value={formData.mobileNumber}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder={t('auth.mobilePlaceholder')}
-                    maxLength={10}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      touched.mobileNumber && errors.mobileNumber
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300'
-                    }`}
-                  />
-                  {touched.mobileNumber && errors.mobileNumber && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors.mobileNumber}
-                    </p>
-                  )}
-                  <p className="text-gray-500 text-xs mt-1">
-                    {t('auth.mobileHint')}
-                  </p>
-                </div>
+                {isAdminLogin ? (
+                  <div>
+                    <label
+                      htmlFor="fullName"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      {t('auth.fullName')}
+                    </label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={t('auth.fullNamePlaceholder')}
+                      maxLength={200}
+                      autoComplete="name"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+                        touched.fullName && errors.fullName
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300'
+                      }`}
+                    />
+                    {touched.fullName && errors.fullName && (
+                      <p className="text-red-600 text-sm mt-1">{errors.fullName}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label
+                      htmlFor="mobileNumber"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      {t('auth.mobile')}
+                    </label>
+                    <input
+                      type="tel"
+                      id="mobileNumber"
+                      name="mobileNumber"
+                      value={formData.mobileNumber}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={t('auth.mobilePlaceholder')}
+                      maxLength={10}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+                        touched.mobileNumber && errors.mobileNumber
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300'
+                      }`}
+                    />
+                    {touched.mobileNumber && errors.mobileNumber && (
+                      <p className="text-red-600 text-sm mt-1">{errors.mobileNumber}</p>
+                    )}
+                    <p className="text-gray-500 text-xs mt-1">{t('auth.mobileHint')}</p>
+                  </div>
+                )}
 
                 {/* Password Field with Show/Hide Toggle */}
                 <div>
@@ -270,16 +326,17 @@ export default function LoginPage() {
               {/* Divider */}
               <div className="my-6 border-t border-gray-200"></div>
 
-              {/* Register Link */}
-              <p className="text-center text-gray-600 text-sm">
-                {t('auth.noAccount')}{' '}
-                <a
-                  href="/register"
-                  className="text-blue-600 font-semibold hover:text-blue-700 transition"
-                >
-                  {t('auth.registerHere')}
-                </a>
-              </p>
+              {!isAdminLogin && (
+                <p className="text-center text-gray-600 text-sm">
+                  {t('auth.noAccount')}{' '}
+                  <a
+                    href="/register"
+                    className="text-blue-600 font-semibold hover:text-blue-700 transition"
+                  >
+                    {t('auth.registerHere')}
+                  </a>
+                </p>
+              )}
 
               {/* Home Link */}
               <p className="text-center text-gray-500 text-xs mt-4">

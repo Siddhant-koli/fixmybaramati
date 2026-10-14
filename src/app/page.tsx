@@ -56,7 +56,7 @@ export default function Home() {
                   {t('home.viewReports')}
                 </a>
                 <a
-                  href="/login"
+                  href="/login?flow=admin"
                   className="border border-blue-200/70 text-blue-100 px-6 py-3 rounded-lg font-medium hover:bg-blue-700 hover:text-white transition"
                 >
                   {t('admin.login')}
