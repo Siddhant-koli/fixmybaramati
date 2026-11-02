@@ -1,5 +1,6 @@
 # FixMyBaramati
 https://github.com/ABHIJEET-0104/141.git
+setup up a CI/CD pipeline jenkins,Docker,& kubernetes to automate the development to deployment process for your AI model
 
 FixMyBaramati is a mobile-first civic issue reporting platform for citizens of Baramati, Maharashtra.
 
