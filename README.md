@@ -1,6 +1,4 @@
 # FixMyBaramati
-https://github.com/ABHIJEET-0104/141.git
-setup up a CI/CD pipeline jenkins,Docker,& kubernetes to automate the development to deployment process for your AI model
 
 FixMyBaramati is a mobile-first civic issue reporting platform for citizens of Baramati, Maharashtra.
 
@@ -95,6 +93,9 @@ This project currently includes:
 - bcrypt password hashing
 - hashed session tokens in the database
 - server-side session checks for protected routes
+- https://github.com/ABHIJEET-0104/141.git setup up a CI/CD pipeline jenkins,Docker,& kubernetes to automate the development to deployment process for your AI model
+
+
 - one persistent vote per authenticated citizen per report, enforced by a database unique constraint
 - report ownership derived from the authenticated session
 - image validation for supported upload types
